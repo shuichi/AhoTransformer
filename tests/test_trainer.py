@@ -15,7 +15,7 @@ class SimpleModel(nn.Module):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         return self.fc(x)
 
 
