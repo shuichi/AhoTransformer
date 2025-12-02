@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 400 700" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <rect x="0" y="0" width="400" height="700" style="fill:url(#_Linear1);"/>
+    <g transform="matrix(1,0,0,1,200,35)">
+        <text x="-118.042px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:18px;fill:white;">T<tspan x="-108.031px -101.026px " y="0px 0px ">ra</tspan>nsformer Encoder Block</text>
+    </g>
+    <g transform="matrix(1,0,0,1,200,65)">
+        <text x="-18.012px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(148,163,184);">Output</text>
+    </g>
+    <path d="M200,90L200,70" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,75L200,65L206,75L194,75Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,103L320,123C320,127.415 316.415,131 312,131L88,131C83.585,131 80,127.415 80,123L80,103C80,98.585 83.585,95 88,95L312,95C316.415,95 320,98.585 320,103Z" style="fill:rgb(5,150,105);"/>
+    <g transform="matrix(1,0,0,1,200,118)">
+        <text x="-35.401px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Add &amp; Norm</text>
+    </g>
+    <path d="M200,160L200,131" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,136L200,126L206,136L194,136Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,168L320,188C320,192.415 316.415,196 312,196L88,196C83.585,196 80,192.415 80,188L80,168C80,163.585 83.585,160 88,160L312,160C316.415,160 320,163.585 320,168Z" style="fill:rgb(147,51,234);"/>
+    <g transform="matrix(1,0,0,1,200,183)">
+        <text x="-66.104px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Feed Forward Network</text>
+    </g>
+    <path d="M200,210L200,196" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M200,210L340,210" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M340,210L340,105" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M340,105L325,105" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M330,99L320,105L330,111L330,99Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,260L200,196" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,201L200,191L206,201L194,201Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,268L320,288C320,292.415 316.415,296 312,296L88,296C83.585,296 80,292.415 80,288L80,268C80,263.585 83.585,260 88,260L312,260C316.415,260 320,263.585 320,268Z" style="fill:rgb(5,150,105);"/>
+    <g transform="matrix(1,0,0,1,200,283)">
+        <text x="-35.401px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Add &amp; Norm</text>
+    </g>
+    <path d="M200,325L200,296" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,301L200,291L206,301L194,301Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,333L320,353C320,357.415 316.415,361 312,361L88,361C83.585,361 80,357.415 80,353L80,333C80,328.585 83.585,325 88,325L312,325C316.415,325 320,328.585 320,333Z" style="fill:rgb(249,115,22);"/>
+    <g transform="matrix(1,0,0,1,200,348)">
+        <text x="-72.255px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Multi-Head Self-Attention</text>
+    </g>
+    <path d="M200,375L200,361" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M200,375L340,375" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M340,375L340,270" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M340,270L325,270" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M330,264L320,270L330,276L330,264Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,425L200,361" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,366L200,356L206,366L194,366Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,433L320,453C320,457.415 316.415,461 312,461L88,461C83.585,461 80,457.415 80,453L80,433C80,428.585 83.585,425 88,425L312,425C316.415,425 320,428.585 320,433Z" style="fill:rgb(2,132,199);"/>
+    <g transform="matrix(1,0,0,1,200,448)">
+        <text x="-57.094px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Positional Encoding</text>
+    </g>
+    <circle cx="200" cy="485" r="14" style="fill:rgb(71,85,105);"/>
+    <g transform="matrix(1,0,0,1,200,491)">
+        <text x="-5.256px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:18px;fill:white;">+</text>
+    </g>
+    <path d="M200,471L200,461" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,466L200,456L206,466L194,466Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,530L200,499" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,504L200,494L206,504L194,504Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,538L320,558C320,562.415 316.415,566 312,566L88,566C83.585,566 80,562.415 80,558L80,538C80,533.585 83.585,530 88,530L312,530C316.415,530 320,533.585 320,538Z" style="fill:rgb(79,70,229);"/>
+    <g transform="matrix(1,0,0,1,200,553)">
+        <text x="-49.147px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Input Embedding</text>
+    </g>
+    <path d="M200,600L200,566" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,571L200,561L206,571L194,571Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <g transform="matrix(1,0,0,1,200,620)">
+        <text x="-13.345px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(148,163,184);">Input</text>
+    </g>
+    <g transform="matrix(1,0,0,1,0,-27)">
+        <path d="M300,676L300,688C300,691.311 297.311,694 294,694L106,694C102.689,694 100,691.311 100,688L100,676C100,672.689 102.689,670 106,670L294,670C297.311,670 300,672.689 300,676Z" style="fill:none;stroke:rgb(100,116,139);stroke-width:1.5px;stroke-dasharray:5,3;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,200,660)">
+        <text x="-78.555px" y="0px" style="font-family:'Helvetica';font-size:11px;fill:rgb(203,213,225);">× N layers (typically N = 6 or 12)</text>
+    </g>
+    <defs>
+        <linearGradient id="_Linear1" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(400,700,-700,400,0,0)"><stop offset="0" style="stop-color:rgb(15,23,42);stop-opacity:1"/><stop offset="0.5" style="stop-color:rgb(30,41,59);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(15,23,42);stop-opacity:1"/></linearGradient>
+    </defs>
+</svg>

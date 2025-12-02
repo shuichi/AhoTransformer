@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 420 750" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <rect x="0" y="0" width="420" height="750" style="fill:url(#_Linear1);"/>
+    <g transform="matrix(1,0,0,1,200,80)">
+        <text x="-52.362px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(148,163,184);">Output Probabilities</text>
+    </g>
+    <g transform="matrix(1,0,0,1.266667,0,-22.666667)">
+        <path d="M200,100L200,85" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    </g>
+    <path d="M194,90L200,80L206,90L194,90Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,118L320,138C320,142.415 316.415,146 312,146L88,146C83.585,146 80,142.415 80,138L80,118C80,113.585 83.585,110 88,110L312,110C316.415,110 320,113.585 320,118Z" style="fill:rgb(99,102,241);"/>
+    <g transform="matrix(1,0,0,1,200,133)">
+        <text x="-49.318px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Linear + Softmax</text>
+    </g>
+    <path d="M200,170L200,146" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,151L200,141L206,151L194,151Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,183L320,199C320,203.415 316.415,207 312,207L88,207C83.585,207 80,203.415 80,199L80,183C80,178.585 83.585,175 88,175L312,175C316.415,175 320,178.585 320,183Z" style="fill:rgb(5,150,105);"/>
+    <g transform="matrix(1,0,0,1,200,196)">
+        <text x="-52.013px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Layer Norm (final)</text>
+    </g>
+    <path d="M200,240L200,207" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,212L200,202L206,212L194,212Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <g transform="matrix(1,0,0,1.043243,0,-10.594595)">
+        <path d="M375,256.503L375,603.497C375,609.846 369.623,615 363,615L57,615C50.377,615 45,609.846 45,603.497L45,256.503C45,250.154 50.377,245 57,245L363,245C369.623,245 375,250.154 375,256.503Z" style="fill:none;stroke:rgb(71,85,105);stroke-width:2px;stroke-dasharray:8,4;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,370,265)">
+        <text x="-17.424px" y="0px" style="font-family:'Helvetica';font-size:11px;fill:rgb(148,163,184);">× N</text>
+    </g>
+    <g transform="matrix(1,0,0,1,55,265)">
+        <text x="0px" y="0px" style="font-family:'Helvetica';font-size:9px;fill:rgb(96,165,250);">Pre-LN</text>
+    </g>
+    <g transform="matrix(1,0,0,1,55,275)">
+        <text x="0px" y="0px" style="font-family:'Helvetica';font-size:9px;fill:rgb(96,165,250);">Structure</text>
+    </g>
+    <circle cx="200" cy="270" r="14" style="fill:rgb(71,85,105);"/>
+    <g transform="matrix(1,0,0,1,200,276)">
+        <text x="-5.256px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:18px;fill:white;">+</text>
+    </g>
+    <path d="M200,310L200,284" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,289L200,279L206,289L194,289Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,318L320,338C320,342.415 316.415,346 312,346L88,346C83.585,346 80,342.415 80,338L80,318C80,313.585 83.585,310 88,310L312,310C316.415,310 320,313.585 320,318Z" style="fill:rgb(147,51,234);"/>
+    <g transform="matrix(1,0,0,1,200,333)">
+        <text x="-66.104px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Feed Forward Network</text>
+    </g>
+    <path d="M350,360L350,262" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M350,262L219,262" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M224,256L214,262L224,268L224,256Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,393L200,346" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,351L200,341L206,351L194,351Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,360L350,360" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M320,401L320,417C320,421.415 316.415,425 312,425L88,425C83.585,425 80,421.415 80,417L80,401C80,396.585 83.585,393 88,393L312,393C316.415,393 320,396.585 320,401Z" style="fill:rgb(5,150,105);"/>
+    <g transform="matrix(1,0,0,1,200,414)">
+        <text x="-33.954px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Layer Norm</text>
+    </g>
+    <path d="M200,450L200,425" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,430L200,420L206,430L194,430Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <circle cx="200" cy="464" r="14" style="fill:rgb(71,85,105);"/>
+    <g transform="matrix(1,0,0,1,200,470)">
+        <text x="-5.256px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:18px;fill:white;">+</text>
+    </g>
+    <path d="M200,504L200,478" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,483L200,473L206,483L194,483Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M320,512L320,532C320,536.415 316.415,540 312,540L88,540C83.585,540 80,536.415 80,532L80,512C80,507.585 83.585,504 88,504L312,504C316.415,504 320,507.585 320,512Z" style="fill:rgb(249,115,22);"/>
+    <g transform="matrix(1,0,0,1,200,527)">
+        <text x="-56.364px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:white;">Causal Self-Attention</text>
+    </g>
+    <path d="M350,554L350,456" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M350,456L219,456" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M224,450L214,456L224,462L224,450Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,587L200,540" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,545L200,535L206,545L194,545Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M200,554L350,554" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M320,595L320,611C320,615.415 316.415,619 312,619L88,619C83.585,619 80,615.415 80,611L80,595C80,590.585 83.585,587 88,587L312,587C316.415,587 320,590.585 320,595Z" style="fill:rgb(5,150,105);"/>
+    <g transform="matrix(1,0,0,1,200,608)">
+        <text x="-33.954px" y="0px" style="font-family:'Helvetica';font-size:13px;fill:white;">Layer Norm</text>
+    </g>
+    <path d="M200,645L200,619" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M194,624L200,614L206,624L194,624Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M195,658L195,678C195,682.415 191.415,686 187,686L88,686C83.585,686 80,682.415 80,678L80,658C80,653.585 83.585,650 88,650L187,650C191.415,650 195,653.585 195,658Z" style="fill:rgb(2,132,199);"/>
+    <g transform="matrix(1,0,0,1,137,673)">
+        <text x="-32.404px" y="0px" style="font-family:'Helvetica';font-size:11px;fill:white;">Position Emb</text>
+    </g>
+    <path d="M320,658L320,678C320,682.415 316.415,686 312,686L213,686C208.585,686 205,682.415 205,678L205,658C205,653.585 208.585,650 213,650L312,650C316.415,650 320,653.585 320,658Z" style="fill:rgb(79,70,229);"/>
+    <g transform="matrix(1,0,0,1,262,673)">
+        <text x="-27.513px" y="0px" style="font-family:'Helvetica';font-size:11px;fill:white;">T<tspan x="-22.013px -15.896px " y="0px 0px ">ok</tspan>en Emb</text>
+    </g>
+    <circle cx="200" cy="668" r="10" style="fill:rgb(71,85,105);"/>
+    <g transform="matrix(1,0,0,1,200,673)">
+        <text x="-4.088px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:14px;fill:white;">+</text>
+    </g>
+    <path d="M200,720L200,705" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M137,705L262,705" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M137,705L137,686" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M262,705L262,686" style="fill:none;fill-rule:nonzero;stroke:rgb(100,116,139);stroke-width:2px;"/>
+    <path d="M131,691L137,681L143,691L131,691Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <path d="M256,691L262,681L268,691L256,691Z" style="fill:rgb(100,116,139);fill-rule:nonzero;"/>
+    <g transform="matrix(1,0,0,1,200,740)">
+        <text x="-33.917px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(148,163,184);">Input <tspan x="-4.104px 1.896px 8.569px " y="0px 0px 0px ">Tok</tspan>ens</text>
+    </g>
+    <g transform="matrix(1,0,0,1,325,499)">
+        <text x="0px" y="0px" style="font-family:'LucidaGrande', 'Lucida Grande', sans-serif;font-weight:500;font-size:9px;fill:rgb(251,191,36);">▼</text>
+        <text x="11.32px" y="0px" style="font-family:'Helvetica';font-size:9px;fill:rgb(251,191,36);">Masked</text>
+    </g>
+    <g transform="matrix(1,0,0,1,206,42)">
+        <text x="-107.042px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:18px;fill:white;">GPT<tspan x="-71.024px -65.03px " y="0px 0px ">-s</tspan>tyle Decoder Block</text>
+    </g>
+    <defs>
+        <linearGradient id="_Linear1" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(420,750,-750,420,0,0)"><stop offset="0" style="stop-color:rgb(15,23,42);stop-opacity:1"/><stop offset="0.5" style="stop-color:rgb(30,41,59);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(15,23,42);stop-opacity:1"/></linearGradient>
+    </defs>
+</svg>
