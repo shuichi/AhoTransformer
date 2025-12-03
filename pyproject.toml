@@ -5,11 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "argparse",
     "torch",
-    "numpy",
     "tensorboard",
 ]
+optional-dependencies = { dev = ["pytest", "ruff"] }
 
 [tool.uv.pip]
 torch-backend = "auto"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

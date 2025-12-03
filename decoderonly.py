@@ -18,6 +18,7 @@ import argparse  # コマンドライン引数処理
 import torch  # PyTorch 本体
 import torch.nn as nn  # NN モジュールのショートカット
 from torch.utils.data import Dataset, DataLoader  # データセットとローダ
+from torch.utils.tensorboard import SummaryWriter # TensorBoard ログ出力用クラス。
 
 
 ############################
@@ -689,9 +690,11 @@ if __name__ == "__main__":
 
     else:
         optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-        num_epochs = 1000
+        num_epochs = 100
         ckpt_dir = "checkpoints"
         os.makedirs(ckpt_dir, exist_ok=True)
+        writer = SummaryWriter()
+        ckpt_dir = "checkpoints"
 
         for epoch in range(1, num_epochs + 1):
             train_loss = train_one_epoch(model, train_loader, optimizer, device)
@@ -702,6 +705,11 @@ if __name__ == "__main__":
                 f"val_loss={val_loss:.4f} | "
                 f"val_acc={val_acc*100:.2f}%"
             )
-            ckpt_path = os.path.join(ckpt_dir, f"checkpoint_epoch_{epoch}.pth")
-            save_checkpoint(ckpt_path, model, optimizer, epoch)
-            print(f"Saved checkpoint: {ckpt_path}")
+            writer.add_scalar("Loss/train", train_loss, epoch)
+            writer.add_scalar("Loss/val", val_loss, epoch)
+            writer.add_scalar("Accuracy/val", val_acc, epoch)
+
+            if epoch % 10 == 0:
+                ckpt_path = os.path.join(ckpt_dir, f"checkpoint_epoch_{epoch}.pth")
+                save_checkpoint(ckpt_path, model, optimizer, epoch)
+                print(f"Saved checkpoint: {ckpt_path}")
