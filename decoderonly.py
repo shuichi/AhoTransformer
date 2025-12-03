@@ -625,7 +625,7 @@ if __name__ == "__main__":
         nhead=4,
         num_layers=2,       # デコーダブロック数（1にすれば「1ブロックだけ」）
         dim_feedforward=256,
-        dropout=0.1,
+        dropout=0.01,
     ).to(device)
 
     # チェックポイント指定時はロードして学習をスキップ
@@ -689,7 +689,7 @@ if __name__ == "__main__":
             aho_infer(model, tokenizer, test_numbers, device)
 
     else:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4)
         num_epochs = 100
         ckpt_dir = "checkpoints"
         os.makedirs(ckpt_dir, exist_ok=True)
