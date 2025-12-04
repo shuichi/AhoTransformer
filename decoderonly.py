@@ -200,7 +200,7 @@ class DecoderBlock(nn.Module):
         d_model: int,
         nhead: int,
         dim_feedforward: int = 256,
-        dropout: float = 0.1,
+        dropout: float = 0.05,
     ):
         super().__init__()
         self.self_attn = nn.MultiheadAttention(
@@ -351,7 +351,7 @@ class AhoDecoderTransformer(nn.Module):
         nhead: int = 4,
         num_layers: int = 2,
         dim_feedforward: int = 256,
-        dropout: float = 0.1,
+        dropout: float = 0.05,
     ):
         super().__init__()
         self.vocab_size = vocab_size
@@ -625,7 +625,7 @@ if __name__ == "__main__":
         nhead=4,
         num_layers=2,       # デコーダブロック数（1にすれば「1ブロックだけ」）
         dim_feedforward=256,
-        dropout=0.01,
+        dropout=0.05,
     ).to(device)
 
     # チェックポイント指定時はロードして学習をスキップ
@@ -689,7 +689,7 @@ if __name__ == "__main__":
             aho_infer(model, tokenizer, test_numbers, device)
 
     else:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
         num_epochs = 100
         ckpt_dir = "checkpoints"
         os.makedirs(ckpt_dir, exist_ok=True)
