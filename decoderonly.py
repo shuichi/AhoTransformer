@@ -206,6 +206,63 @@ class DecoderBlock(nn.Module):
         self.self_attn = nn.MultiheadAttention(
             embed_dim=d_model, num_heads=nhead, batch_first=True
         )
+        #              Self-Attention: 第1段階
+        #     （X から Q / K / V を生成し、ヘッドに分割）
+        #     入力埋め込み列 X
+        #     形: (B, S, d_model)
+        #
+        #                     X
+        #       （Self-Attention では query = key = value = X）
+        #                     │
+        #                     │  線形変換（全結合）
+        #                     │  W_Q, W_K, W_V
+        #         ┌───────────┼───────────────┬───────────────┐
+        #         │           │               │               │
+        #         ▼           ▼               ▼               ▼
+        #    Q_all_heads   K_all_heads    V_all_heads
+        # 形: (B, S, d_model) (B, S, d_model) (B, S, d_model)
+        #         │               │               │
+        #         │   ヘッド方向に分割（d_model = h * d_k）＋ reshape / transpose
+        #         │
+        #         ├────▶ Q_heads: (B, h, S, d_k)
+        #         ├────▶ K_heads: (B, h, S, d_k)
+        #         └────▶ V_heads: (B, h, S, d_k)        
+        #
+        #
+        #
+        #                     Self-Attention: 第2段階
+        #       （各ヘッドでスケールド・ドット積アテンション → ヘッド結合）
+        #
+        # Q_heads: (B, h, S, d_k)
+        # K_heads: (B, h, S, d_k)
+        # V_heads: (B, h, S, d_k)
+        #                     │
+        #                     │  内積 + スケーリング
+        #                     ▼
+        #     score = Q_heads @ K_heads^T / sqrt(d_k)
+        #     形: (B, h, S, S)
+        #                     │
+        #                     │  softmax（キー方向 S で正規化）
+        #                     ▼
+        #     attn_weights = softmax(score, dim = -1)
+        #     形: (B, h, S, S)
+        #                     │
+        #                     │  V_heads との重み付き和
+        #                     ▼
+        #     head_outputs = attn_weights @ V_heads
+        #     形: (B, h, S, d_k)
+        #                     │
+        #                     │  ヘッド方向の結合（concat）
+        #                     ▼
+        #     concat = reshape(head_outputs, (B, S, h * d_k))
+        #     形: (B, S, d_model)
+        #                     │
+        #                     │  出力用線形変換 W_O, b_O
+        #                     ▼
+        #     out = concat @ W_O^T + b_O
+        #     形: (B, S, d_model)        
+        
+        
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.linear2 = nn.Linear(dim_feedforward, d_model)
         self.dropout = nn.Dropout(dropout)
@@ -689,7 +746,7 @@ if __name__ == "__main__":
             aho_infer(model, tokenizer, test_numbers, device)
 
     else:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=2e-4)
         num_epochs = 100
         ckpt_dir = "checkpoints"
         os.makedirs(ckpt_dir, exist_ok=True)
