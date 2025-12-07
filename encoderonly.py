@@ -4,7 +4,12 @@
 # エンコーダのみの Transformer を使った
 # 「3の倍数 or 3を含むか」判定モデルの実装例
 
-# Shuichi Kurabayashi
+# 以下に登場する (B, S, E) はテンソルの形を略記した表記です。
+# B: バッチサイズ（何サンプル分まとめているか）
+# S: シーケンス長（トークン数）
+# E: 埋め込みや特徴ベクトルの次元数
+
+# Shuichi Kurabayashi <shuichi.kurabayashi@keio.jp>
 ##############################
 
 import math # 位置エンコーディングに使う、Python標準数学ライブラリ
@@ -13,18 +18,20 @@ import random # テスト用の乱数生成に使う、Python標準ライブラ�
 from typing import List, Tuple # 型ヒント用、Python標準ライブラリ
 
 ############################
-# ここまでは標準ライブラリをインポートするだけの処理。
-# 一般的なPythonコードでは、数学処理とファイル操作と型ヒントはよく使うので、
+# ここまでは標準ライブラリをインポートするだけの処理。一般的なPythonコードでは、
+# 数学処理とファイル操作と型ヒントはよく使うので、この辺りをimportすると良い
 ############################
 
 import argparse # コマンドライン引数処理に使う、サードパーティライブラリ
 
-import torch # PyTorch本体。
-import torch.nn as nn # ニューラルネットワーク用のレイヤー/損失などのクラス。
-import torch.nn.functional as F # レイヤーの関数版（活性化関数や畳み込みなどを直接呼ぶため）。
-from torch.utils.data import Dataset, DataLoader # データセット定義用の基底クラスと、バッチ化・シャッフルなどを行うデータローダ。
+import torch # PyTorch本体
+import torch.nn as nn # ニューラルネットワーク用のレイヤー/損失などのクラス
+import torch.nn.functional as F
+# レイヤーの関数版（活性化関数や畳み込みなどを直接呼ぶため）
+from torch.utils.data import Dataset, DataLoader
+# データセット定義用の基底クラスと、バッチ化・シャッフルなどを行うデータローダ
 
-from torch.utils.tensorboard import SummaryWriter # TensorBoard ログ出力用クラス。
+from torch.utils.tensorboard import SummaryWriter # TensorBoard ログ出力用クラス
 
 ############################
 # ルール: 「Aho」かどうかを判定する関数。
@@ -53,16 +60,18 @@ def is_aho_number(n: int) -> bool:
 ############################
 # トークナイザ
 
-# Transformerにテキスト列を学習させるとき、そのままの文字列では扱えないので、
-# まずトークンという離散的な ID の列に変換します。
-# ここで問題になるのが、「語彙（トークンの種類）をどう設計するか」です。
-# 語彙を「単語」だけで構成すると、次のような問題が出ます。
-# 文字レベルだけにすると、語彙数は少なくて済む一方で、1 文が非常に長いトークン列になってしまい、学習・推論が非効率になります。
-# 単語レベルにすると、頻度の低い単語が山ほど出てきて「知らない単語（OOV）」問題が深刻になるうえ、語彙サイズも巨大化します。
-# そこで開発されたトークナイザが、BPE（Byte Pair Encoding）です。
-# BPEの基本は、「頻度の高い隣り合うペアを、1 つの新しい記号として置き換え続ける」ことです。
-# 「よく出る部分文字列は 1 トークンにまとめて短くしつつ、めったに出ない単語でも細かく分割すれば必ず表現できる」というバランスを取ろうとします。
-# ここでは、BPEのような汎用のトークナイザは使わず、単純に「各桁を1トークン」とするトークナイザを実装します。
+# Transformerにテキスト列を学習させるとき、そのままの文字列では扱えないので、ま
+# ずトークンという離散的な ID の列に変換します。ここで問題になるのが、「語彙
+# （トークンの種類）をどう設計するか」です。語彙を「単語」だけで構成すると、次の
+# ような問題が出ます。文字レベルだけにすると、語彙数は少なくて済む一方で、1 文が
+# 非常に長いトークン列になってしまい、学習・推論が非効率になります。単語レベルに
+# すると、頻度の低い単語が山ほど出てきて「知らない単語（OOV）」問題が深刻になる
+# うえ、語彙サイズも巨大化します。そこで開発されたトークナイザが、BPE（Byte Pair
+# Encoding）です。 BPEの基本は、「頻度の高い隣り合うペアを、1 つの新しい記号とし
+# て置き換え続ける」ことです。 「よく出る部分文字列は 1 トークンにまとめて短くし
+# つつ、めったに出ない単語でも細かく分割すれば必ず表現できる」というバランスを取
+# ろうとします。ここでは、BPEのような汎用のトークナイザは使わず、単純に「各桁を1
+# トークン」とするトークナイザを実装します。
 ############################
 
 class DigitTokenizer:
@@ -121,37 +130,43 @@ class DigitTokenizer:
         # str(...): 桁を文字として並べた文字列に変換（後続の桁ごとの処理用）
         
         digit_ids = [self.digit2id[ch] for ch in s]
-        # s にある各桁文字を digit2id 辞書でトークンIDへ変換し、リストに並べています。
-        # s が "203" なら ['2','0','3'] をそれぞれ 3,1,4 のIDに置き換えて [3, 1, 4] のようなリストを作る処理です。
+        # s にある各桁文字を digit2id 辞書でトークンIDへ変換し、リストに並べてい
+        # ます。 s が "203" なら ['2','0','3'] をそれぞれ 3,1,4 のIDに置き換えて
+        # [3, 1, 4] のようなリストを作る処理です。
 
         tokens = [self.cls_token_id] + digit_ids
-        # 先頭に特殊トークン [CLS] のIDを付けて、続く桁ID列 digit_ids と連結し、最終的なトークン列を作っています。
-        # [self.cls_token_id] と digit_ids はどちらもリストなので、この + はリスト同士の連結（結合）を行い、新しいリストを返します。
-        # 数字の加算や要素同士の演算ではありません。
+        # 先頭に特殊トークン [CLS] のIDを付けて、続く桁ID列 digit_ids と連結し、
+        # 最終的なトークン列を作っています。 [self.cls_token_id] と digit_ids は
+        # どちらもリストなので、この + はリスト同士の連結（結合）を行い、新しい
+        # リストを返します。数字の加算や要素同士の演算ではありません。
 
         if len(tokens) > self.max_len:
             tokens = tokens[:self.max_len]
-        # 生成したトークン列が設定した最大長 max_len を超えた場合に先頭から max_len 要素だけ残して切り詰めています。
-        # これで [CLS] 以降が長すぎてもシーケンス長を一定に保ちます。
+        # 生成したトークン列が設定した最大長 max_len を超えた場合に先頭から
+        # max_len 要素だけ残して切り詰めています。これで [CLS] 以降が長すぎても
+        # シーケンス長を一定に保ちます。
 
         attention_mask = [1] * len(tokens)
-        # 現在のトークン列の長さぶんだけ 1 を並べたリストを作り、
-        # 各トークンが有効（PAD ではない）であることを示すマスクとして初期化しています。
-        # [1] * len(tokens) の * はリストをその回数だけ繰り返して新しいリストを作る演算です
+        # 現在のトークン列の長さぶんだけ 1 を並べたリストを作り、各トークンが有
+        # 効（PAD ではない）であることを示すマスクとして初期化しています。 [1] *
+        # len(tokens) の * はリストをその回数だけ繰り返して新しいリストを作る演
+        # 算です
 
         while len(tokens) < self.max_len:
             tokens.append(self.pad_token_id)
             attention_mask.append(0)
-        # トークン列が max_len に達するまで [PAD] のIDを末尾に追加し、
-        # 同じ位置の attention_mask には「無効」を示す 0 を積み増すループです。
+        # トークン列が max_len に達するまで [PAD] のIDを末尾に追加し、同じ位置の
+        # attention_mask には「無効」を示す 0 を積み増すループです。
 
         input_ids = torch.tensor(tokens, dtype=torch.long)
-        # tokens のリストを PyTorch のテンソル（torch.long 型の1次元 LongTensor）に変換しています。
-        # モデル入力として扱える数値配列にする処理です。
+        # tokens のリストを PyTorch のテンソル（torch.long 型の1次元
+        # LongTensor）に変換しています。モデル入力として扱える数値配列にする処理
+        # です。
         
         attention_mask = torch.tensor(attention_mask, dtype=torch.long)
-        # attention_mask のリストを PyTorch のテンソル（torch.long 型の1次元 LongTensor）に変換しています。
-        # モデルがマスクを数値配列として扱えるようにする処理です。
+        # attention_mask のリストを PyTorch のテンソル（torch.long 型の1次元
+        # LongTensor）に変換しています。モデルがマスクを数値配列として扱えるよう
+        # にする処理です。
         
         return input_ids, attention_mask
 
@@ -159,10 +174,11 @@ class DigitTokenizer:
         self, numbers: List[int]
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        複数の整数をまとめてトークン化し、トークンID列とattention maskの
-        PyTorchで扱えるバッチ形式のテンソルとして変換する関数です。
-        具体的には、各整数を encode_number で [CLS]+桁列+[PAD] のトークンIDとマスクに変換し、
-        それらを先頭軸で積んで形状 (バッチサイズ, max_len) の input_ids と attention_mask を返します。
+        複数の整数をまとめてトークン化し、トークンID列とattention maskのPyTorch
+        で扱えるバッチ形式のテンソルとして変換する関数です。具体的には、各整数を
+        encode_number で [CLS]+桁列+[PAD] のトークンIDとマスクに変換し、それらを
+        先頭軸で積んで形状 (バッチサイズ, max_len) の input_ids と
+        attention_mask を返します。
 
         Args:
             numbers (List[int]): 変換する整数のリスト。
@@ -170,27 +186,30 @@ class DigitTokenizer:
         Returns:
             Tuple[Tensor, Tensor]:
                 input_ids (LongTensor): 形状 (B, max_len) のトークンID列。
-                attention_mask (LongTensor): 形状 (B, max_len) のマスク。1=有効、0=PAD。
+                attention_mask (LongTensor): 形状 (B, max_len) のマスク。1=有
+                効、0=PAD。
         """
         encoded = [self.encode_number(n) for n in numbers]
-        # numbers に含まれる各整数ごとに encode_number を呼び、
-        # 結果のタプル (input_ids, attention_mask) をリストに集めています。
-        # リスト内包表記で一括変換している部分です。
+        # numbers に含まれる各整数ごとに encode_number を呼び、結果のタプル
+        # (input_ids, attention_mask) をリストに集めています。リスト内包表記[]で一
+        # 括変換している部分です。
         
         input_ids = torch.stack([e[0] for e in encoded], dim=0)
-        # encoded に格納された各サンプルの input_ids を取り出し、
-        # dim=0 でスタックしてバッチ次元を持つ1本のテンソル (batch_size, max_len) を作っています。
-        # リスト内包表記で最初の要素だけ抜き出し、torch.stack で縦方向に積んでいます。
-        # 「スタックしてバッチ次元を持つ1本のテンソル (batch_size, max_len) を作る」とは、
-        # 複数のサンプルを縦に積んで「まとめた配列」を作っている、ということです。
-        # 各サンプルの input_ids は長さ max_len の1次元テンソル。
-        # それらを dim=0（先頭方向）に積むと、先頭に「何個のサンプルか」を表す軸が増え、
-        # 形状が (サンプル数, max_len) なります。
-        # こうして、1個ずつの配列を「バッチ」として1つの2次元テンソルにまとめています。
+        # encoded に格納された各サンプルの input_ids を取り出し、 dim=0 でスタッ
+        # クしてバッチ次元を持つ1本のテンソル (batch_size, max_len) を作っていま
+        # す。リスト内包表記で最初の要素だけ抜き出し、torch.stack で縦方向に積ん
+        # でいます。 「スタックしてバッチ次元を持つ1本のテンソル (batch_size,
+        # max_len) を作る」とは、複数のサンプルを縦に積んで「まとめた配列」を
+        # 作っている、ということです。各サンプルの input_ids は長さ max_len の1
+        # 次元テンソル。それらを dim=0（先頭方向）に積むと、先頭に「何個のサンプ
+        # ルか」を表す軸が増え、形状が (サンプル数, max_len) なります。こうし
+        # て、1個ずつの配列を「バッチ」として1つの2次元テンソルにまとめていま
+        # す。
 
         attention_mask = torch.stack([e[1] for e in encoded], dim=0)
-        # encoded に入っている各リストの attention_mask を取り出し、
-        # 先頭軸（dim=0）に積んでバッチ形状 (バッチサイズ, max_len) の1本のテンソルにまとめています。
+        # encoded に入っている各リストの attention_mask を取り出し、先頭軸
+        # （dim=0）に積んでバッチ形状 (バッチサイズ, max_len) の1本のテンソルに
+        # まとめています。
         
         return input_ids, attention_mask
 
@@ -201,10 +220,12 @@ class DigitTokenizer:
 
 class PositionalEncoding(nn.Module):
     """
-    Transformer で用いる正弦波位置エンコーディングを計算し、入力埋め込みに加算するモジュール。
+    Transformer で用いる正弦波位置エンコーディングを計算し、入力埋め込みに加算す
+    るモジュール。
 
     Attributes:
-        pe (Tensor): 形状 (max_len, 1, d_model) の事前計算済み位置エンコーディング。
+        pe (Tensor): 形状 (max_len, 1, d_model) の事前計算済み位置エンコーディン
+        グ。
     """
 
     def __init__(self, d_model: int, max_len: int = 512):
@@ -282,12 +303,14 @@ class AhoTransformerClassifier(nn.Module):
         self.d_model = d_model
 
         self.embedding = nn.Embedding(vocab_size, d_model, padding_idx=0)
-        # 語彙サイズ vocab_size の埋め込み層を作り、各トークンIDを次元 d_model のベクトルに変換します。
-        # padding_idx=0 により ID 0 の埋め込みは学習せず 0 ベクトルとして扱われ、損失計算にも影響しないようになります。
+        # 語彙サイズ vocab_size の埋め込み層を作り、各トークンIDを次元 d_model
+        # のベクトルに変換します。 padding_idx=0 により ID 0 の埋め込みは学習せ
+        # ず 0 ベクトルとして扱われ、損失計算にも影響しないようになります。
         
         self.pos_encoder = PositionalEncoding(d_model, max_len=max_len)
-        # 埋め込み後の特徴に正弦波の位置エンコーディングを足すためのモジュールを初期化しています。
-        # d_model 次元の特徴に対応し、扱うシーケンス長の上限を max_len として事前計算します。
+        # 埋め込み後の特徴に正弦波の位置エンコーディングを足すためのモジュールを
+        # 初期化しています。 d_model 次元の特徴に対応し、扱うシーケンス長の上限
+        # を max_len として事前計算します。
 
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
@@ -296,17 +319,18 @@ class AhoTransformerClassifier(nn.Module):
             dropout=dropout,
             batch_first=False,
         )
-        # Transformer エンコーダの1層ぶんのブロックを作成しています。
-        # 隠れ次元は d_model、マルチヘッド数は nhead、中間のフィードフォワード層の次元は dim_feedforward、
-        # ドロップアウト率は dropout。
-        # batch_first=False なので入力・出力の形は (seq_len, batch_size, d_model) を前提に動作します。
-        # batch_first は PyTorch の RNN/Transformer などで入力テンソルの次元順を指定するフラグです。
+        # Transformer エンコーダの1層ぶんのブロックを作成しています。隠れ次元は
+        # d_model、マルチヘッド数は nhead、中間のフィードフォワード層の次元は
+        # dim_feedforward、ドロップアウト率は dropout。
+        # batch_first=False なので入力・出力の形は (seq_len, batch_size,
+        # d_model) を前提に動作します。 batch_first は PyTorch の
+        # RNN/Transformer などで入力テンソルの次元順を指定するフラグです。
         # batch_first=True: 形は (batch_size, seq_len, feature_dim) が前提。
-        # batch_first=False（デフォルトが多い）: 形は (seq_len, batch_size, feature_dim) が前提。
-        # これに合わせて入力を転置したり、出力を元に戻したりします。
-        # PyTorch の nn.TransformerEncoder は batch_first=False の場合、
-        # 入力と出力の形を「(シーケンス長, バッチサイズ, 特徴次元)」で受け渡します。
-        # つまり先頭の軸がシーケンス長になる前提なので、
+        # batch_first=False（デフォルトが多い）: 形は (seq_len, batch_size,
+        # feature_dim) が前提。これに合わせて入力を転置したり、出力を元に戻した
+        # りします。 PyTorch の nn.TransformerEncoder は batch_first=False の場
+        # 合、入力と出力の形を「(シーケンス長, バッチサイズ, 特徴次元)」で受け渡
+        # します。つまり先頭の軸がシーケンス長になる前提なので、
         # 呼び出し前に (B, S, E) → (S, B, E) に転置し、
         # 処理後は逆に (S, B, E) → (B, S, E) に戻す必要があります。
         # (B, S, E) はテンソルの形を略記した表記で、
@@ -318,8 +342,9 @@ class AhoTransformerClassifier(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(
             encoder_layer, num_layers=num_layers
         )
-        # 先ほど作ったエンコーダ層 encoder_layer を num_layers 回積み重ねた TransformerEncoder 本体を組み立てています。
-        # これが入力シーケンスを複数層通して特徴抽出する部分です。
+        # 先ほど作ったエンコーダ層 encoder_layer を num_layers 回積み重ねた
+        # TransformerEncoder 本体を組み立てています。これが入力シーケンスを複数
+        # 層通して特徴抽出する部分です。
         
         self.classifier = nn.Linear(d_model, 1)
 
@@ -337,66 +362,74 @@ class AhoTransformerClassifier(nn.Module):
             Tensor: 形状 (batch_size,) のスカラー出力（ロジット）。
         """
         x = self.embedding(input_ids) * math.sqrt(self.d_model)  
-        # トークンIDを埋め込みベクトルに変換し、埋め込みの分散をそろえるためにベクトル全体を sqrt(d_model) で
-        # スケーリングしています。出力は形状 (バッチ, シーケンス長, 埋め込み次元) のテンソルです。
+        # トークンIDを埋め込みベクトルに変換し、埋め込みの分散をそろえるためにベ
+        # クトル全体を sqrt(d_model) でスケーリングしています。出力は形状 (バッ
+        # チ, シーケンス長, 埋め込み次元) のテンソルです。
         
         x = x.transpose(0, 1)  
-        # 埋め込みのテンソルの軸を入れ替え、形を (seq_len, batch_size, embedding_dim) にしています。
-        # TransformerEncoder が batch_first=False 前提なので、先頭をシーケンス長に合わせるための転置です。
+        # 埋め込みのテンソルの軸を入れ替え、形を (seq_len, batch_size,
+        # embedding_dim) にしています。 TransformerEncoder が batch_first=False
+        # 前提なので、先頭をシーケンス長に合わせるための転置です。
         
         x = self.pos_encoder(x)
-        # シーケンス位置に応じた正弦波の位置エンコーディングを埋め込みテンソルに加算しています。
-        # これでトークンの並び順情報をモデルに渡します。
+        # シーケンス位置に応じた正弦波の位置エンコーディングを埋め込みテンソルに
+        # 加算しています。これでトークンの並び順情報をモデルに渡します。
         
         src_key_padding_mask = (attention_mask == 0)  # (B, S) bool, True=無視
         # attention_mask で 0 の位置を True にしたブールマスクを作り、
-        # Transformer へ「ここは PAD なので無視して」と伝えるための src_key_padding_mask を
-        # 用意しています（形状は (batch, seq_len) ）。
-        # (attention_mask == 0)は、PyTorchの演算子で、attention_mask の各要素を 0 と比較し、
-        # 0 の位置だけ True、それ以外は False のブールテンソルを作っています。
-        # 形状は元のマスクと同じ (batch_size, seq_len) のままです。
+        # Transformer へ「ここは PAD なので無視して」と伝えるための
+        # src_key_padding_mask を用意しています（形状は (batch, seq_len) ）。
+        # (attention_mask == 0)は、PyTorchの演算子で、attention_mask の各要素を
+        # 0 と比較し、 0 の位置だけ True、それ以外は False のブールテンソルを
+        # 作っています。形状は元のマスクと同じ (batch_size, seq_len) のままで
+        # す。
         
         encoded = self.transformer_encoder(
             x, src_key_padding_mask=src_key_padding_mask
         ) 
         # 位置エンコーディングを付与した入力 x を Transformer エンコーダに通し、
-        # src_key_padding_mask で PAD 位置を無視しながら自己注意とフィードフォワードを複数層適用して、
-        # 形状 (seq_len, batch_size, d_model) のエンコード結果 encoded を得ています。
+        # src_key_padding_mask で PAD 位置を無視しながら自己注意とフィードフォ
+        # ワードを複数層適用して、形状 (seq_len, batch_size, d_model) のエンコー
+        # ド結果 encoded を得ています。
 
         encoded = encoded.transpose(0, 1) 
-        # エンコーダ出力の軸を入れ替え、(seq_len, batch_size, d_model) から (batch_size, seq_len, d_model) に
-        # 戻しています。バッチ先頭の形にして後段の処理で扱いやすくするためです。
+        # エンコーダ出力の軸を入れ替え、(seq_len, batch_size, d_model) から
+        # (batch_size, seq_len, d_model) に戻しています。バッチ先頭の形にして後
+        # 段の処理で扱いやすくするためです。
 
         mask = attention_mask.unsqueeze(-1)  
-        # attention_mask (B, S)の末尾に次元を1つ増やして (B, S, 1) にしています。
-        # 各トークン位置のマスクを特徴次元にブロードキャストできる形にするための unsqueeze です。
-        # unsqueeze はテンソルに長さ1の次元を挿入する操作です。
-        # 例えば x.shape == (B, S) で x.unsqueeze(-1) とすると末尾に軸を足して (B, S, 1) になります。
-        # 特徴次元などへブロードキャストしやすくする用途で使います。
-        # ブロードキャストとは、配列（テンソル）の次元や長さが合わないとき、
-        # 自動的に長さ1の軸を伸ばして形を揃え、要素を繰り返して演算できるようにする仕組みです。
-        # 例えば (B, S, 1) と (B, S, E) を掛け算すると、
-        # 前者の末尾の長さ1が E に広がって各特徴次元に同じマスクを適用できます。
-        # (B, S) のままでは右端の次元が E と合わずブロードキャストできませんが、
-        # 末尾に 1 を足して (B, S, 1) にすると、1 が E に拡がって (B, S, E) と要素ごとの掛け算ができるようになります。
+        # attention_mask (B, S)の末尾に次元を1つ増やして (B, S, 1) にしていま
+        # す。各トークン位置のマスクを特徴次元にブロードキャストできる形にするた
+        # めの unsqueeze です。 unsqueeze はテンソルに長さ1の次元を挿入する操作
+        # です。例えば x.shape == (B, S) で x.unsqueeze(-1) とすると末尾に軸を足
+        # して (B, S, 1) になります。特徴次元などへブロードキャストしやすくする
+        # 用途で使います。ブロードキャストとは、配列（テンソル）の次元や長さが合
+        # わないとき、自動的に長さ1の軸を伸ばして形を揃え、要素を繰り返して演算
+        # できるようにする仕組みです。例えば (B, S, 1) と (B, S, E) を掛け算する
+        # と、前者の末尾の長さ1が E に広がって各特徴次元に同じマスクを適用できま
+        # す。 (B, S) のままでは右端の次元が E と合わずブロードキャストできませ
+        # んが、末尾に 1 を足して (B, S, 1) にすると、1 が E に拡がって (B, S,
+        # E) と要素ごとの掛け算ができるようになります。
         
         masked_encoded = encoded * mask
-        # エンコーダ出力 encoded にマスクを掛けて、PAD 位置の特徴を0にしています。
-        # 形状は (B, S, E) のままです。
+        # エンコーダ出力 encoded にマスクを掛けて、PAD 位置の特徴を0にしていま
+        # す。形状は (B, S, E) のままです。
         
         lengths = mask.sum(dim=1).clamp(min=1) 
         # 各サンプルの有効なトークン数（PAD でないトークン数）を数えています。
-        # mask は (B, S, 1) なので、dim=1 で合計すると (B, 1) の各サンプルの有効トークン数が得られます。
-        # clamp(min=1) で最小値を1にして、ゼロ除算を防いでいます。
+        # mask は (B, S, 1) なので、dim=1 で合計すると (B, 1) の各サンプルの有効
+        # トークン数が得られます。 clamp(min=1) で最小値を1にして、ゼロ除算を防
+        # いでいます。
         
         pooled = masked_encoded.sum(dim=1) / lengths 
-        # 各サンプルの有効トークン位置の特徴を足し合わせて平均を取り、
-        # 形状 (B, E) のプーリング特徴 pooled を得ています。
-        # これがシーケンス全体を表す固定長の特徴ベクトルになります。
+        # 各サンプルの有効トークン位置の特徴を足し合わせて平均を取り、形状 (B,
+        # E) のプーリング特徴 pooled を得ています。これがシーケンス全体を表す固
+        # 定長の特徴ベクトルになります。
 
         logits = self.classifier(pooled).squeeze(-1) 
-        # プーリング特徴 pooled を線形層に通して形状 (B, 1) のロジットを得てから、
-        # squeeze(-1) で末尾の次元を削除し、形状 (B,) の1次元テンソルにしています。
+        # プーリング特徴 pooled を線形層に通して形状 (B, 1) のロジットを得てか
+        # ら、 squeeze(-1) で末尾の次元を削除し、形状 (B,) の1次元テンソルにして
+        # います。
         
         return logits
 

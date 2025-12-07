@@ -54,7 +54,7 @@
   ```bash
   uv run decoderonly.py
   ```
-- 推論だけ実行（1,000 個をランダム判定）:
+- 既存チェックポイントで推論だけ実行:
   ```bash
   uv run decoderonly.py -c models/decoder_epoch_40.pth
   ```

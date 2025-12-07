@@ -1,3 +1,8 @@
+# 環境構築方法
+# % uv venv
+# % uv pip sync pyproject.toml --torch-backend=auto
+# % uv pip install torch --torch-backend=auto
+
 [project]
 name = "ahotransformer"
 version = "0.1.0"
