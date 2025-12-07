@@ -1,15 +1,30 @@
-##############################################################################
-# しつこいくらいに行間をぎっしり埋めた丁寧なTransformer Decoder実装例
+##############################################################################し
+# つこいくらいに行間をぎっしり埋めた丁寧なTransformer Decoder実装例
 # decoderonly.py
-# デコーダのみの Transformer で「Aho 数」判定を学習する実装例。 encoderonly.py
-# と同じタスクを、GPT 風のデコーダブロックだけで組む。
-
-# 以下に登場する (B, S, E) はテンソルの形を略記した表記です。
-# B: バッチサイズ（何サンプル分まとめているか）
-# S: シーケンス長（トークン数）
-# E: 埋め込みや特徴ベクトルの次元数
-
+# 
+# デコーダのみの Transformer で「Aho 数」判定を学習する実装例。 Aho (エイホ)数と
+# は、「3の倍数」または桁に「3」を含む1以上の整数で、落語家の桂三度師匠が発明し
+# た、算術演算と文字列照合を組み合わせた極めて高度な数列判定方式です。 これ
+# を、encoderonly.pyと同じタスクを、GPT 風のデコーダブロックだけで組みます。
+#
+# 以下に登場する (B, S, E) はテンソルの形を略記した表記です。 B: バッチサイズ
+# （何サンプル分まとめているか） S: シーケンス長（トークン数） E: 埋め込みや特徴
+# ベクトルの次元数
+#
 # Shuichi Kurabayashi <shuichi.kurabayashi@keio.jp>
+
+# ソースコードを概観すると、Transformerデコーダは、トークナイザ、位置エンコー
+# ディング、デコーダーブロック、そして、それらを使って学習を行うトレーニングスク
+# リプト(main関数)から構成されています。Transformerデコーダとは、端的には、系列
+# （例えば文字列のような、何かの配列）を入力として受け取り、その系列の次に来る
+# トークンを予測するモデルです。デコーダは、自己注意機構とフィードフォワードネッ
+# トワークを組み合わせたブロックを複数層積み重ねた構造を持ちます。各ブロックは、
+# 入力された系列の情報を処理し、文脈に基づいて次のトークンを予測するための内部表
+# 現を生成します。デコーダは、「文脈に応じた次のトークンの予測」に優れており、た
+# とえば、この例のような数字のAho数の判定、ゲームにおけるNPCの行動の生成、チャッ
+# トボットの応答生成、文章の自動生成など、様々なタスクに応用できます。汎用性が高
+# いモデルなので、まずはこの例で基本を押さえ、さらに複雑なタスクや大規模データ
+# セットに挑戦してみてください。
 ##############################################################################
 
 import math  # 位置エンコーディングで使う標準数学ライブラリ
@@ -26,9 +41,14 @@ from torch.utils.data import Dataset, DataLoader  # データセットとロー�
 from torch.utils.tensorboard import SummaryWriter # TensorBoard ログ出力用クラス。
 
 
-############################
-# ルール: 「Aho」かどうか
-############################
+##############################################################################
+# ルール: 「Aho」かどうかを判定する関数
+
+# ここでは、「Aho 数」の定義に基づいて、与えられた整数が「3の倍数」または桁に
+# 「3」を含むかどうかを判定する関数を実装します。Aho 数の判定は、モデルが学習す
+# べき主要なタスクであり、この関数はデータセットのラベル付けやモデルの評価に使用
+# されます。
+##############################################################################
 
 def is_aho_number(n: int) -> bool:
     """
@@ -45,9 +65,9 @@ def is_aho_number(n: int) -> bool:
     return (n % 3 == 0) or ("3" in str(abs(int(n))))
 
 
-############################
-# トークナイザ（デコーダ用）
-
+##############################################################################
+# デコーダ用トークナイザ (Tokenizer)
+#
 # Transformerにテキスト列を学習させるとき、そのままの文字列では扱えないので、ま
 # ずトークンという離散的な ID の列に変換します。ここで問題になるのが、「語彙
 # （トークンの種類）をどう設計するか」です。語彙を「単語」だけで構成すると、次の
@@ -60,8 +80,76 @@ def is_aho_number(n: int) -> bool:
 # つつ、めったに出ない単語でも細かく分割すれば必ず表現できる」というバランスを取
 # ろうとします。ここでは、BPEのような汎用のトークナイザは使わず、単純に「各桁を1
 # トークン」とするトークナイザを実装します。
+#
+# トークナイザの理解を深めるための参考文献をいくつか紹介します。圧縮アルゴリズム
+# の Byte Pair Encoding (BPE)を、ニューラル機械翻訳のサブワード分割に転用し、巨
+# 大語彙と未知語問題をうまく処理できることを示した最初の論文は次のものです。
+# - Rico Sennrich, Barry Haddow, Alexandra Birch, Neural Machine Translation of
+#   Rare Words with Subword Units (ACL 2016)
+#
+# 次に、サブワード分割が多言語環境において有効であることを示した嚆矢的な論文は、
+# 次のものです。ICASSPは音声処理分野の国際会議ですが、この論文では音声検索におけ
+# る多言語処理においてサブワード分割が有効であることを示しました。
+# - Mike Schuster, Kaisuke Nakajima, Japanese and Korean voice search (ICASSP
+#   2012)
+# 
+# 日本語・韓国語のような単語境界が明示されない言語に対して、サブワード単位の語彙
+# を統計的に学習するアプローチ(後の WordPiece)を導入しています。形態素ではなくサ
+# ブワード分割が有効であることを示した点で重要です。生のテキスト（空白で単語分割
+# しない）」から直接サブワード語彙を学習できる仕組みとしては、SentencePieceが最
+# もよく使われています。
+# - Taku Kudo, John Richardson, SentencePiece: A simple and language independent
+#   subword tokenizer and detokenizer for Neural Text Processing (EMNLP 2018) 
+# - Taku Kudo, Subword Regularization: Improving Neural Network Translation
+#   Models with Multiple Subword Candidates (ACL 2018) 
+#
+# トークナイザを最初に学ぶ意義は、このトークナイザの独自実装がTransformerの応用
+# において極めて重要だということです。例えば、TransformerやLLMは、そのままでは直
+# 接的には科学データにてきようすることは困難です。そのため、科学データに特化した
+# トークナイザーが必要になります。例えば、化学データのフォーマットとして SMILES
+# がよく知られていますが、SMILES には「Cl」「Br」「[nH]」のような複数文字で一単
+# 位のトークンが数多くあります。これを単純なバイトレベルや文字レベルのトークンに
+# 分割してしまうと、モデルにとっては「C と l の並び」と「Cl（塩素原子）」が区別
+# しづらくなり、化学構造が消失する恐れがあります。また、数字は「リング閉じ」のイ
+# ンデックスとして使われるなど、自然言語とはかなり違う役割を持ちます。これは、プ
+# ログラムコードの学習にも近いため、ドメインごとにトークナイザーを分けることに
+# よって、モデルの性能が大きく変わることが知られています。このため、化学系の
+# Transformerでは、専用のSMILESトークナイザーを用意して、原子、結合、括弧、イン
+# デックスなどをきちんと一単位として切り出す設計が採用されています。ゲーム分野で
+# もゲームログに特化したトークナイザを実装することには大きな意義があります。
 
-############################
+# 分野ごとの独自トークナイザの例を示します。まず典型例が化学、特に SMILES /
+# SELFIES 系です。Li & Fourches の SMILES Pair Encoding (SPE) は、「SMILES の頻
+# 出部分構造」を BPE 風にまとめてトークンにすることで、原子レベルや単純な文字レ
+# ベルよりも、化学的に意味のある単位で分割できるようにしたものです。QSAR や生成
+# タスクで、従来のトークン化よりも精度とサンプル効率が改善することを示していま
+# す。2024年には、SMILES や SELFIES に対して BPE ではなく Atom Pair Encoding
+# (APE) を提案し、化学構造の整合性をより保てると報告している研究や、SPE など既存
+# 手法と比較しながら「どのトークナイザーが化学言語モデルに向くか」を系統的に評価
+# する仕事も出ています。
+# - Xinhao Li and Denis Fourches, SMILES Pair Encoding: A Data-Driven
+#   Substructure Tokenization Algorithm for Deep Learning, Journal of Chemical
+#   Information and Modeling 2021 61 (4), 1560-1569, DOI:
+#   10.1021/acs.jcim.0c01127
+# - Leon, M., Perezhohin, Y., Peres, F. et al. Comparing SMILES and SELFIES
+#   tokenization for enhanced chemical language modeling. Sci Rep 14, 25016
+#   (2024). https://doi.org/10.1038/s41598-024-76440-8
+# 
+# バイオ系でも、アミノ酸や DNA 配列を対象にしたトークナイズ研究が増えています。
+# 例えば evoBPE という手法は、単に頻度だけでマージを決めるのではなく「アミノ酸置
+# 換行列（進化的に類似なアミノ酸）」に基づいて BPE を拡張し、生物学的に意味のあ
+# る単位がトークンとして出てくるようにしたものです。 ここまで来ると、もはや「サ
+# ブワードアルゴリズムを、生物学の進化モデルに合わせて再設計する」というレベル
+# で、かなりドメイン特化のトークナイザー研究になっています。
+# - https://arxiv.org/abs/2503.08838
+# 
+# プログラミング言語・ソースコードの世界でも「構文や識別子の性質を意識したトーク
+# ン化」が盛んに議論されています。CodeBPE は、ソースコード用の言語モデルに対し
+# て、キーワード・識別子・演算子などコード固有のトークン構造を考慮したサブトーク
+# ナイズの選択肢を比較し、「どの分割がコードタスクに一番効くか」を体系的に調査し
+# ています。
+# - https://arxiv.org/abs/2308.00683
+##############################################################################
 
 class DecoderTokenizer:
     """
@@ -76,23 +164,31 @@ class DecoderTokenizer:
     Attributes:
         max_len (int): 出力シーケンス長。数字+[SEP]+[LABEL]+PAD をここに収める。
         pad_id (int): PAD トークン ID。 sep_id (int): 区切りトークン ID。
-        mask_id (int): 予測用マスク ID。 aho_id (int): Aho ラベルの ID（ターゲッ
-        ト）。 safe_id (int): Safe ラベルの ID（ターゲット）。 digit2id
+        mask_id (int): 予測用マスク ID。 aho_id (int): Aho ラベルの ID (ターゲット）。
+        safe_id (int): Safe ラベルの ID (ターゲット)。 digit2id
         (dict[str, int]): 各数字文字を ID に写像する辞書。
     """
 
     def __init__(self, max_len: int = 8):
-        self.max_len = max_len
-        self.pad_id = 0
-        self.sep_id = 11
+        self.max_len = max_len # 数字列 + [SEP] + [MASK] を収める長さ
+        self.pad_id = 0 # PAD トークン
+        self.sep_id = 11 # 区切りトークン
         self.mask_id = 12  # 予測させる位置のマスクトークン
-        self.aho_id = 13
-        self.safe_id = 14
+        self.aho_id = 13 # AHO ラベル
+        self.safe_id = 14 # SAFE ラベル
         self.digit2id = {str(d): d + 1 for d in range(10)}  # [PAD]=0 を避け 1 始まり
+        # 0〜9 を文字としてキーにし、値を 1〜10 に割り当てる辞書を生成しています。
+        # より詳しく説明すると、この行はPythonの辞書内包表記（Dictionary Comprehension）です。
+        # 基本構文は、 {キー式: 値式 for 変数 in イテラブル} です。
+        # 1. range(10): 0から9までの整数を生成
+        # 2. for d in range(10): 各整数を変数dに代入して繰り返し
+        # 3. str(d): キー部分 - 整数dを文字列に変換（"0", "1", "2", ...）
+        # 4. d + 1: 値部分 - 整数dに1を加算（1, 2, 3, ...）
+        # これにより、数字文字をキー、対応するトークンIDを値とする辞書が生成されます。
 
     @property
     def vocab_size(self) -> int:
-        return 15  # 0〜14
+        return 15  # 0〜14の15トークン
 
     def encode(self, n: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -103,12 +199,26 @@ class DecoderTokenizer:
 
         Returns:
             Tuple[Tensor, Tensor, Tensor]:
-                input_ids: 数字列 + [SEP] + [MASK] + PAD（shape: (max_len,)）
-                attention_mask: 1=有効, 0=PAD（shape: (max_len,)）
-                label_id: 正解ラベル [AHO]/[SAFE] のトークン ID（shape: ()）
+                input_ids: 数字列 + [SEP] + [MASK] + PAD (shape: (max_len,))
+                attention_mask: 1=有効, 0=PAD (shape: (max_len,))
+                label_id: 正解ラベル [AHO]/[SAFE] のトークン ID (shape: ())
         """
         s = str(abs(int(n))) # 整数を文字列に変換（符号は無視）
         digit_ids = [self.digit2id[ch] for ch in s]  # 各桁を ID に変換
+        # 与えられた整数 n を文字列に変換し、その各桁を対応するトークンIDに変換
+        # しています。より詳しく説明すると、この行はPythonのリスト内包表記（List
+        # Comprehension）です。基本構文は、 [式 for 変数 in イテラブル] です。
+        # 1. s: 数字の文字列（例: "123"）
+        # 2. for ch in s: 文字列sの各文字を変数chに代入して繰り返し
+        # 3. self.digit2id[ch]: 各文字chをキーとして辞書digit2idから対応するIDを
+        #    取得
+        # 4. [...]: 結果をリストとして生成
+        #
+        # 具体例もし s = "123"の場合： ch = "1" → self.digit2id["1"] → 2 ch =
+        # "2" → self.digit2id["2"] → 3 ch = "3" → self.digit2id["3"] → 4となり、
+        # 結果の digit_ids は [2, 3, 4] となります。        
+        # 辞書内包表記との違いは次の通りです。辞書内包表記: {キー: 値 for ...} →
+        # 辞書を生成リスト内包表記: [式 for ...] → リストを生成
 
         # 正解ラベル ID を決定（入力には入れずターゲットとして保持）
         if is_aho_number(n):
@@ -118,6 +228,8 @@ class DecoderTokenizer:
 
         # 入力系列: digits + [SEP] + [MASK]
         tokens = digit_ids + [self.sep_id] + [self.mask_id]
+        # ここは単純に、数字トークン列の後ろに区切りトークンとマスクトークンを追
+        # 加しています。リスト同士の連結は、+ 演算子で行えます。
 
         # 長すぎる場合は末尾だけ残す（今回は max_len を十分大きく取る前提）
         if len(tokens) > self.max_len:
@@ -129,6 +241,7 @@ class DecoderTokenizer:
         while len(tokens) < self.max_len:
             tokens.append(self.pad_id)
             attention_mask.append(0)
+            # PAD トークンは無効なので attention_mask は 0 にする
 
         # Tensor に変換して返す
         input_ids = torch.tensor(tokens, dtype=torch.long)
@@ -149,16 +262,16 @@ class DecoderTokenizer:
             Tuple[Tensor, Tensor, Tensor]: 各サンプルの input_ids, attention_mask, label_id を
             先頭軸でまとめたテンソル。
         """
-        encoded = [self.encode(n) for n in numbers]
-        input_ids = torch.stack([e[0] for e in encoded], dim=0)
-        attention_mask = torch.stack([e[1] for e in encoded], dim=0)
-        label_ids = torch.stack([e[2] for e in encoded], dim=0)
+        encoded = [self.encode(n) for n in numbers] # 各整数を個別にエンコード。リスト内包表記でまとめる。
+        input_ids = torch.stack([e[0] for e in encoded], dim=0) # 各サンプルの input_ids をバッチ軸で結合
+        attention_mask = torch.stack([e[1] for e in encoded], dim=0) # 各サンプルの attention_mask をバッチ軸で結合
+        label_ids = torch.stack([e[2] for e in encoded], dim=0) # 各サンプルの label_id をバッチ軸で結合
         return input_ids, attention_mask, label_ids
 
 
-############################
-# 位置エンコーディング
-
+##############################################################################
+# 位置エンコーディング (Positional Encoding)
+#
 # batch_first=True の入力テンソル (B, S, E) を前提とする。
 #
 # 位置エンコーディングは、Decoder-Only Transformer において、シーケンス中の
@@ -172,12 +285,10 @@ class DecoderTokenizer:
 # し、それを埋め込み X (B, S, E) に要素ごと（つまりは、トークン毎）に加算しま
 # す。すると、同じトークンでも位置が違えば異なるベクトル表現になり、モデルは「内
 # 容」と「位置」の両方を手がかりに文脈を処理し、次トークンの予測精度を高めること
-# ができます。ベクトルへの加算のイメージとしては、音の合成に近いイメージです。例
-# えば、二つの楽器を同時に鳴らしたとき、録音したサウンドの波形情報は一つの波に
-# なっていますが、人間は二つの楽器を区別することができるし、アンサンブルを感じる
-# ことができます。同じように、トークンの内容情報と位置情報が混ざり合っても、モデ
-# ルは学習を通じて両者をうまく読み分け、文脈の中でどのトークンがどの位置に現れた
-# のかを判断できるようになります。
+# ができます。ベクトルへの加算のイメージとしては、「犬」というトークンが高次元空
+# 間に位置しているとき、その周辺も「犬」に対応する領域になりますが、位置エンコー
+# ディングでは、その犬の意味を変えない程度にほんの少しだけ位置を動かすること
+# で、「トークン先頭のほうの犬」という情報を与える、という感じです。
 #
 # 正弦波にもとづく位置エンコーディングを使う利点は、単に「位置ごとに違う値にな
 # る」だけでなく、「位置の差」に対応するパターンが線形な形で埋め込まれている点に
@@ -191,8 +302,7 @@ class DecoderTokenizer:
 # 出し、バッチ方向にブロードキャストして X (B, S, E) に加算します。 batch_first
 # = True の場合では、この加算は「テンソルの形を合わせて足すだけ」なので実装は単
 # 純です。
-
-############################
+##############################################################################
 
 class PositionalEncoding(nn.Module):
     """
@@ -205,15 +315,54 @@ class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, max_len: int = 512):
         super().__init__()
         pe = torch.zeros(max_len, d_model)
+        # 位置エンコーディングの土台となる配列を用意しています。「最大系列長
+        # max_len 行 × 埋め込み次元 d_model 列」の2次元テンソルを0で初期化し、後
+        # 続の sin/cos 計算で各位置ごとの値を書き込むための空きテーブルを作って
+        # います（デフォルトdtype は float32）。
+
         position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
+        # 0 から max_len-1 までの連番を float32 で作り（形は
+        # (max_len,)）、unsqueeze(1) で列方向に次元を1つ足して (max_len, 1) の縦
+        # ベクトルにしています。後続で周波数ごとの div_term と掛け算できるよう、
+        # 位置 index を列ベクトルに整形している箇所です。
+
         div_term = torch.exp(
             torch.arange(0, d_model, 2, dtype=torch.float32)
             * (-math.log(10000.0) / d_model)
         )
+        # div_term は位置エンコーディングの周波数スケールを並べたベクトルです。
+        # torch.arange(0, d_model, 2, dtype=torch.float32) で 0,2,4,… の偶数イン
+        # デックスを取り出し（長さは d_model/2）、それに (-math.log(10000.0) /
+        # d_model) を掛けて指数のスケールを作り、 torch.exp(...) で exp(-k *
+        # log(10000)/d_model) 形式の値列に変換しています。結果は (d_model/2,) 形
+        # 状の float32 テンソルで、後続の position * div_term と組み合わせ
+        # て、sin/cos の波長を次元ごとに変えた位置エンコーディングを作るために使
+        # われます。
+
         pe[:, 0::2] = torch.sin(position * div_term)
+        # 位置エンコーディング行列 pe の偶数次元（0,2,4, … 列）に sin 波を入れて
+        # います。position が (max_len, 1)、div_term が (d_model/2,) なのでブ
+        # ロードキャストで (max_len, d_model/2) の値が計算され、その結果が偶数カ
+        # ラムに丸ごと代入されます（奇数カラムは後続の cos で埋まる）。
+
         pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0)  # (1, max_len, d_model)
+        # 位置エンコーディング行列 pe の奇数次元（1,3,5, … 列）に cos 波を入れて
+        # います。position が (max_len, 1)、div_term が (d_model/2,) なのでブ
+        # ロードキャストで (max_len, d_model/2) の値が計算され、その結果が奇数カ
+        # ラムに丸ごと代入されます（偶数カラムは前の sin で埋まっています）。
+
+        pe = pe.unsqueeze(0) 
+        # 先頭にバッチ軸を追加し、形を (1, max_len, d_model) にしています。これ
+        # で順伝播時に任意のバッチサイズにブロードキャストしやすくなり、x とその
+        # まま足せる形に整えています。
+
         self.register_buffer("pe", pe)
+        # pe を「学習対象ではないがモジュールに属する定数」として登録していま
+        # す。これにより、state_dict に含まれて保存・ロードできる（再現性確
+        # 保）、to(device) や cuda() でモデルを移したとき一緒にデバイスを移動す
+        # る、勾配計算・最適化の対象にならず、学習パラメータと区別できる、などの
+        # 利点が得られます。位置エンコーディングは固定値なのでパラメータ登録する
+        # 必要はなく、バッファとして持たせるのが適切です。
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -226,10 +375,19 @@ class PositionalEncoding(nn.Module):
             Tensor: 同形状で位置情報を足したテンソル。
         """
         seq_len = x.size(1)
+        # x は埋め込みテンソル (B, S, E) を想定しているので、x.size(1) でシーケ
+        # ンス長 S（トークン数）を取り出しています。後段で位置エンコーディングを
+        # 切り出す長さとして使うための取得です
+        
         return x + self.pe[:, :seq_len] # pyright: ignore[reportIndexIssue]
+        # 入力埋め込み x (形 (B, S, E)) に、先頭 seq_len 分だけ切り出した位置エ
+        # ンコーディング self.pe[:, :seq_len] を足して返しています。self.pe は
+        # (1, max_len, d_model) なので、バッチ軸でブロードキャストされ、系列長ぶ
+        # んだけ位置情報が加算されます。# pyright: ignore[...] は型チェッカーへ
+        # の黙らせコメントで、静的型解析の警告を避けるためです。
 
 
-############################
+##############################################################################
 # デコーダブロック（自己注意機構のみを持つTransformerブロック）
 
 # デコーダブロックは、入力されたトークン列を読み込み、その位置ごとの内部表現（埋

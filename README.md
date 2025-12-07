@@ -21,15 +21,13 @@
 
 ## 事前準備
 
-1. Python 3.10 以上（pyproject は 3.14 以上を要求）。
-2. PyTorch を GPU/MPS 環境に合わせてインストール（[公式](https://pytorch.org/get-started/locally/)のコマンドを利用）。
-3. その他依存を追加でインストール:
-   ```bash
-   uv venv
-   uv pip install torch --torch-backend=auto
-   uv sync
-   ```
-   Python から CUDA が利用可能かどうかは、`uv run python -c "import torch; print(torch.cuda.is_available())"` でチェックできます。
+```bash
+  uv venv
+  uv pip sync pyproject.toml --torch-backend=auto
+  uv pip install torch --torch-backend=auto
+```
+
+Python から CUDA が利用可能かどうかは、`uv run python -c "import torch; print(torch.cuda.is_available())"` でチェックできます。
 
 ## 使い方（クイックスタート）
 
