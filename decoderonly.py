@@ -30,11 +30,14 @@
 import math  # 位置エンコーディングで使う標準数学ライブラリ
 import os  # チェックポイント保存用のファイル操作
 import random  # 推論テストで乱数を生成する
+import sys  # システム操作用標準ライブラリ。今回はexit()のみを使う
 from typing import List, Tuple  # 型ヒント用Python標準ライブラリ
 # Pythonにおける型ヒント（Type Hints）は、Python 3.5で導入された機能で、変数や関
 # 数の引数・戻り値に期待される型を明示的に記述できる仕組みです。
 
 import argparse  # コマンドライン引数処理
+import onnx # ONNXライブラリ
+import onnxscript  # ONNX スクリプト用ライブラリ
 import torch  # PyTorch 本体
 import torch.nn as nn  # NN モジュールのショートカット
 from torch.utils.data import Dataset, DataLoader  # データセットとローダ
@@ -889,20 +892,9 @@ def aho_infer(
     print(f"\n正解率: {acc*100:.2f}% ({correct}/{total})")
 
 
-############################
+##############################################################################
 # メイン
-############################
-
-def save_checkpoint(path: str, model: nn.Module,
-                    optimizer: torch.optim.Optimizer, epoch: int) -> None:
-    """モデルとオプティマイザの状態を dict にまとめて保存する。"""
-    checkpoint = {
-        "epoch": epoch,
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
-    }
-    torch.save(checkpoint, path)
-
+##############################################################################
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -917,14 +909,21 @@ if __name__ == "__main__":
         action="store_true",
         help="対話モードで数字を入力して判定（チェックポイント指定時のみ有効）",
     )
+    parser.add_argument(
+        "-x", "--export",
+        type=str,
+        default=None,
+        help="学習済みチェックポイントへのパスを指定するとONNXへエクスポート",
+    )
+
     args = parser.parse_args()
 
-    if torch.backends.mps.is_available():          # Mac (M1/M2/M3 など) のGPU(MPS)
-        device = torch.device("mps")
-    elif torch.cuda.is_available():                # NVIDIA GPU (Linux / Windows 等)
-        device = torch.device("cuda")
-    else:                                          # どちらも無ければCPU
-        device = torch.device("cpu")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps") # Mac (M1/M2/M3 など) のGPU(MPS)
+    elif torch.cuda.is_available():
+        device = torch.device("cuda") # NVIDIA GPU (Linux / Windows 等)
+    else:
+        device = torch.device("cpu") # どちらも無ければCPU
     print("device:", device)
 
     # 5桁まで想定（数字桁最大5 + [SEP] + [LABEL] = 7）なので max_len=7 くらいで足りる
@@ -932,7 +931,11 @@ if __name__ == "__main__":
 
     # 学習用・検証用の範囲
     train_numbers = list(range(1, 40001))
+    # 学習には1〜40000の数字を使う
     val_numbers = list(range(40001, 50001))
+    # 検証（Validation）には40001〜50000を使う。このように、学習と検証で全く異な
+    # るデータセットを使うことで、モデルが単に答えを暗記して対処することを防止す
+    # る。
 
     train_dataset = AhoDecoderDataset(train_numbers, tokenizer)
     val_dataset = AhoDecoderDataset(val_numbers, tokenizer)
@@ -949,6 +952,39 @@ if __name__ == "__main__":
         dim_feedforward=256,
         dropout=0.05,
     ).to(device)
+    
+    
+    if args.export is not None:
+        print("\nExporting to ONNX...")
+        cpu_device = torch.device("cpu")
+        checkpoint = torch.load(args.export, map_location=cpu_device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.eval()
+        model.to(cpu_device)
+        print(f"Loaded checkpoint from {args.export} "
+              f"(epoch={checkpoint.get('epoch', 'N/A')})")
+
+        # ダミー入力（バッチサイズ1, シーケンス長 max_len）
+        dummy_input_ids = torch.zeros(1, tokenizer.max_len, dtype=torch.long, device=cpu_device)
+        dummy_attention_mask = torch.ones(1, tokenizer.max_len, dtype=torch.long, device=cpu_device)
+        onnx_path = "aho_decoder_transformer.onnx"
+        torch.onnx.export(
+        model,
+            (dummy_input_ids, dummy_attention_mask),
+            onnx_path,
+            input_names=["input_ids", "attention_mask"],
+            output_names=["logits"],   # 形状は (B, S, vocab_size)
+            dynamic_axes={
+                "input_ids": {0: "batch"},
+                "attention_mask": {0: "batch"},
+                "logits": {0: "batch"},
+            },
+            opset_version=17,
+            external_data=False,
+            dynamo=False,
+        )
+        print("ONNX エクスポート完了:", onnx_path)
+        sys.exit(0)
 
     # チェックポイント指定時はロードして学習をスキップ
     if args.checkpoint is not None:
@@ -956,8 +992,8 @@ if __name__ == "__main__":
         model.load_state_dict(checkpoint["model_state_dict"])
         print(f"Loaded checkpoint from {args.checkpoint} "
               f"(epoch={checkpoint.get('epoch', 'N/A')})")
-        model.eval()
 
+        model.eval()
         if args.interactive:
             print("\n=== 対話モード ===")
             print("数字を入力してください。空行または Ctrl+C / Ctrl+D で終了します。")
@@ -1039,5 +1075,10 @@ if __name__ == "__main__":
 
             if epoch % 10 == 0:
                 ckpt_path = os.path.join(ckpt_dir, f"checkpoint_epoch_{epoch}.pth")
-                save_checkpoint(ckpt_path, model, optimizer, epoch)
+                checkpoint = {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                }
+                torch.save(checkpoint, ckpt_path)
                 print(f"Saved checkpoint: {ckpt_path}")

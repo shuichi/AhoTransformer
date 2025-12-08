@@ -8,6 +8,8 @@ dependencies = [
     "torch",
     "numpy",
     "tensorboard",
+    "onnx>=1.20.0",
+    "onnxscript>=0.5.6",
 ]
 optional-dependencies = { dev = ["pytest", "ruff"] }
 
