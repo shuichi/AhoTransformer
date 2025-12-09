@@ -2,22 +2,181 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aho Decoder Transformer (ONNX + WebGPU)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* 基本設定 */
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.7);
+        --primary-color: #3b82f6;
+        --primary-hover: #2563eb;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+        --accent: #10b981;
+        --error: #ef4444;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-color);
+        background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      /* メインコンテナ（カードデザイン） */
+      .container {
+        width: 100%;
+        max-width: 480px;
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 2rem;
+        line-height: 1.4;
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      /* 入力エリア */
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      label {
+        font-size: 0.9rem;
+        color: var(--text-sub);
+        font-weight: 600;
+      }
+
+      input[type='number'] {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.2rem;
+        background: rgba(15, 23, 42, 0.6);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        color: var(--text-main);
+        font-family: 'JetBrains Mono', monospace;
+        transition: all 0.3s ease;
+        outline: none;
+      }
+
+      input[type='number']:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+      }
+
+      /* ボタン */
+      button {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: white;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      /* 結果表示エリア（ターミナル風） */
+      pre {
+        margin-top: 2rem;
+        background: #000;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #333;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: #4ade80; /* Terminal Green */
+        white-space: pre-wrap; /* スマホで横スクロールしないように折り返す */
+        word-break: break-all;
+        min-height: 120px;
+        position: relative;
+      }
+
+      pre::before {
+        content: 'OUTPUT >';
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: #333;
+        color: #fff;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-bottom-right-radius: 8px;
+        border-top-left-radius: 11px;
+      }
+
+      /* スマホ向け微調整 */
+      @media (max-width: 480px) {
+        .container {
+          padding: 1.5rem;
+        }
+        h1 {
+          font-size: 1.25rem;
+        }
+      }
+    </style>
   </head>
   <body>
-    <h1>Aho数判定デモ（ONNX Runtime Web）</h1>
+    <div class="container">
+      <h1>Aho Decoder Transformer<br /><span style="font-size: 0.8em; opacity: 0.8">(ONNX + WebGPU)</span></h1>
 
-    <div>
-      <label
-        >整数 n:
-        <input id="input-n" type="number" value="123" />
-      </label>
+      <div class="input-group">
+        <label for="input-n">整数 n を入力してください</label>
+        <input id="input-n" type="number" value="123" placeholder="例: 123" />
+      </div>
+
       <button id="run-btn">判定する</button>
+
+      <pre id="result">ここに結果が表示されます...</pre>
     </div>
 
-    <pre id="result"></pre>
-
-    <!-- WebGPU 対応版 ONNX Runtime Web を CDN から読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.webgpu.min.js"></script>
     <script>
       // 語彙とトークナイザの定義（Python の DecoderTokenizer と同じ設定）
@@ -71,11 +230,24 @@
       async function initSession() {
         if (session) return session;
 
-        // 実行プロバイダに WebGPU を指定し、利用不可なら wasm へフォールバック
-        session = await ort.InferenceSession.create('aho_decoder_transformer.onnx', {
-          executionProviders: ['webgpu', 'wasm'],
-        });
-        console.log('ONNX session ready.');
+        try {
+          // まず WebGPU での初期化を試みる
+          console.log('Trying WebGPU...');
+          session = await ort.InferenceSession.create('aho_decoder_transformer.onnx', {
+            executionProviders: ['webgpu'],
+          });
+          console.log('ONNX session ready (WebGPU).');
+        } catch (e) {
+          // WebGPU でエラーが出たらここに来る
+          console.warn('WebGPU failed or not supported. Falling back to WASM.', e);
+
+          // WASM (CPU) で再挑戦
+          session = await ort.InferenceSession.create('aho_decoder_transformer.onnx', {
+            executionProviders: ['wasm'],
+          });
+          console.log('ONNX session ready (WASM).');
+        }
+
         return session;
       }
 
@@ -151,41 +323,55 @@
           return;
         }
 
-        const { inputIds, attentionMask } = encodeNumber(n);
+        // UI: 実行中であることを示す（オプション）
+        const btn = document.getElementById('run-btn');
+        const originalBtnText = btn.textContent;
+        btn.textContent = '推論中...';
+        btn.disabled = true;
 
-        // ONNX Runtime Web 用の Tensor を作成
-        // int64 は BigInt64Array を使う
-        const inputIdsBig = new BigInt64Array(inputIds.length);
-        const attnMaskBig = new BigInt64Array(attentionMask.length);
-        for (let i = 0; i < inputIds.length; i++) {
-          inputIdsBig[i] = BigInt(inputIds[i]);
-          attnMaskBig[i] = BigInt(attentionMask[i]);
+        try {
+          const { inputIds, attentionMask } = encodeNumber(n);
+
+          // ONNX Runtime Web 用の Tensor を作成
+          // int64 は BigInt64Array を使う
+          const inputIdsBig = new BigInt64Array(inputIds.length);
+          const attnMaskBig = new BigInt64Array(attentionMask.length);
+          for (let i = 0; i < inputIds.length; i++) {
+            inputIdsBig[i] = BigInt(inputIds[i]);
+            attnMaskBig[i] = BigInt(attentionMask[i]);
+          }
+
+          const inputTensor = new ort.Tensor('int64', inputIdsBig, [1, maxLen]);
+          const attnTensor = new ort.Tensor('int64', attnMaskBig, [1, maxLen]);
+
+          const sess = await initSession();
+
+          const feeds = {
+            input_ids: inputTensor,
+            attention_mask: attnTensor,
+          };
+
+          const outputs = await sess.run(feeds);
+          const logitsTensor = outputs.logits; // Tensor オブジェクト
+          const { tag, pAho, pSafe } = logitsToResult(logitsTensor, attentionMask);
+
+          const rule = isAhoNumberJS(n);
+
+          const text =
+            `n = ${n}\n` +
+            `推論結果: ${tag}\n` +
+            `p_AHO = ${pAho.toFixed(3)}\n` +
+            `p_SAFE = ${pSafe.toFixed(3)}\n` +
+            `ルール判定 (3の倍数 or 3を含む): ${rule}`;
+
+          document.getElementById('result').textContent = text;
+        } catch (err) {
+          console.error(err);
+          document.getElementById('result').textContent = 'エラー: ' + err;
+        } finally {
+          btn.textContent = originalBtnText;
+          btn.disabled = false;
         }
-
-        const inputTensor = new ort.Tensor('int64', inputIdsBig, [1, maxLen]);
-        const attnTensor = new ort.Tensor('int64', attnMaskBig, [1, maxLen]);
-
-        const sess = await initSession();
-
-        const feeds = {
-          input_ids: inputTensor,
-          attention_mask: attnTensor,
-        };
-
-        const outputs = await sess.run(feeds);
-        const logitsTensor = outputs.logits; // Tensor オブジェクト
-        const { tag, pAho, pSafe } = logitsToResult(logitsTensor, attentionMask);
-
-        const rule = isAhoNumberJS(n);
-
-        const text =
-          `n = ${n}\n` +
-          `推論結果: ${tag}\n` +
-          `p_AHO = ${pAho.toFixed(3)}\n` +
-          `p_SAFE = ${pSafe.toFixed(3)}\n` +
-          `ルール判定 (3の倍数 or 3を含む): ${rule}`;
-
-        document.getElementById('result').textContent = text;
       }
 
       document.getElementById('run-btn').addEventListener('click', () => {
