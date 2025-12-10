@@ -191,12 +191,6 @@
         digit2id[String(d)] = d + 1;
       }
 
-      function isAhoNumberJS(n) {
-        const v = Math.abs(parseInt(n, 10));
-        if (Number.isNaN(v)) return false;
-        return v % 3 === 0 || v.toString().includes('3');
-      }
-
       function encodeNumber(n) {
         const v = Math.abs(parseInt(n, 10));
         const s = v.toString();
@@ -206,9 +200,7 @@
           digitIds.push(digit2id[ch]);
         }
 
-        const labelId = isAhoNumberJS(n) ? ahoId : safeId;
-
-        let tokens = digitIds.concat([sepId, labelId]);
+        let tokens = digitIds.concat([sepId]);
 
         if (tokens.length > maxLen) {
           tokens = tokens.slice(tokens.length - maxLen);
@@ -355,14 +347,8 @@
           const logitsTensor = outputs.logits; // Tensor オブジェクト
           const { tag, pAho, pSafe } = logitsToResult(logitsTensor, attentionMask);
 
-          const rule = isAhoNumberJS(n);
-
           const text =
-            `n = ${n}\n` +
-            `推論結果: ${tag}\n` +
-            `p_AHO = ${pAho.toFixed(3)}\n` +
-            `p_SAFE = ${pSafe.toFixed(3)}\n` +
-            `ルール判定 (3の倍数 or 3を含む): ${rule}`;
+            `n = ${n}\n` + `推論結果: ${tag}\n` + `p_AHO = ${pAho.toFixed(3)}\n` + `p_SAFE = ${pSafe.toFixed(3)}`;
 
           document.getElementById('result').textContent = text;
         } catch (err) {
