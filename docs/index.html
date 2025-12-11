@@ -200,7 +200,7 @@
           digitIds.push(digit2id[ch]);
         }
 
-        let tokens = digitIds.concat([sepId]);
+        let tokens = digitIds.concat([sepId, mask]);
 
         if (tokens.length > maxLen) {
           tokens = tokens.slice(tokens.length - maxLen);

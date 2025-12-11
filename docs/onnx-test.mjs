@@ -28,7 +28,7 @@ function encodeNumber(n) {
     digitIds.push(digit2id[ch]);
   }
 
-  let tokens = digitIds.concat([sepId, labelId]);
+  let tokens = digitIds.concat([sepId, mask]);
 
   if (tokens.length > maxLen) {
     tokens = tokens.slice(tokens.length - maxLen);
@@ -160,7 +160,9 @@ for (const n of numbers) {
   const { tag, pAho, pSafe } = logitsToResult(logitsTensor, attentionMask);
 
   const rule = isAhoNumberJS(n); // 検証用途に JS で正解を計算
-  const result = rule === (tag === 'Aho') || rule !== (tag === 'Safe');
+  const isPredAho = (tag === 'Aho'); // モデルが Aho を選んだかどうか
+  const result = (rule === isPredAho); 
+  
   if (result) sum++;
   const text = `n = ${n}  推論結果: ${tag}   p_AHO = ${pAho.toFixed(3)}   p_SAFE = ${pSafe.toFixed(3)}   ${
     result ? 'OK' : 'NG'
