@@ -173,12 +173,13 @@
 
     <div class="input-group">
       <label for="input-n">整数 n を入力してください</label>
-      <input id="input-n" type="number" inputmode="numeric" value="123" placeholder="例: 123" min="1" max="99999" step="1" pattern="[0-9]*"/>
+      <input id="input-n" type="number" inputmode="numeric" value="123" placeholder="例: 123" min="1" max="99999"
+        step="1" pattern="[0-9]*" />
     </div>
 
     <button id="run-btn">判定する</button>
 
-    <pre id="result">ここに結果が表示されます...</pre>
+    <pre id="result">ここに結果が表示されます</pre>
     <br />
     <a href="https://github.com/shuichi/AhoTransformer/blob/main/decoderonly.py"><img src="./github-mark-white.svg"
         alt="GitHub" style="width: 32px; height: 32px;" /></a>
@@ -231,20 +232,19 @@
 
       try {
         // まず WebGPU での初期化を試みる
-        console.log('Trying WebGPU...');
+        document.getElementById('result').textContent += '\nTrying WebGPU...';
         session = await ort.InferenceSession.create('aho_decoder_transformer.onnx', {
           executionProviders: ['webgpu'],
         });
-        console.log('ONNX session ready (WebGPU).');
+        document.getElementById('result').textContent += 'Success! ONNX session ready (WebGPU).\n';
       } catch (e) {
         // WebGPU でエラーが出たらここに来る
-        console.warn('WebGPU failed or not supported. Falling back to WASM.', e);
-
+        document.getElementById('result').textContent += 'failed or not supported. Falling back to WASM...\n';
         // WASM (CPU) で再挑戦
         session = await ort.InferenceSession.create('aho_decoder_transformer.onnx', {
           executionProviders: ['wasm'],
         });
-        console.log('ONNX session ready (WASM).');
+        document.getElementById('result').textContent += 'Success! ONNX session ready (WASM).\n';
       }
 
       return session;
@@ -366,6 +366,13 @@
         btn.disabled = false;
       }
     }
+
+    window.addEventListener('load', () => {
+      initSession().catch((err) => {
+        console.error(err);
+        document.getElementById('result').textContent = 'エラー: ' + err;
+      });
+    });
 
     document.getElementById('run-btn').addEventListener('click', () => {
       runInference().catch((err) => {
