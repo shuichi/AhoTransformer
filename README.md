@@ -2,6 +2,7 @@
 
 - Shuichi Kurabayashi <shuichi.kurabayashi@keio.jp>
 - 2025.12.2
+- [ONNX Runtime WebによるEdgeサイド推論デモ](https://shuichi.github.io/AhoTransformer/)
 
 ## 概要
 
