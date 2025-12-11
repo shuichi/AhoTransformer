@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "install": "^0.13.0",
+    "npm": "^11.7.0",
+    "onnxruntime-node": "^1.23.2"
+  }
+}

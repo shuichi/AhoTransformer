@@ -641,6 +641,86 @@ class DecoderTokenizer:
         return input_ids, attention_mask, label_ids
 
 
+    def encode_without_label(self, n: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        整数 n を 1 サンプル分のトークン列に変換する。
+
+        Args:
+            n (int): 変換する整数。
+
+        Returns:
+            Tuple[Tensor, Tensor]:
+                input_ids: 数字列 + [SEP] + [MASK] + PAD (shape: (max_len,))
+                attention_mask: 1=有効, 0=PAD (shape: (max_len,))
+        """
+        s = str(abs(int(n))) # 整数を文字列に変換（符号は無視）
+        digit_ids = [self.digit2id[ch] for ch in s]  # 各桁を ID に変換
+        # 与えられた整数 n を文字列に変換し、その各桁を対応するトークンIDに変換
+        # しています。より詳しく説明すると、この行はPythonのリスト内包表記（List
+        # Comprehension）です。基本構文は、 [式 for 変数 in イテラブル] です。
+        # 1. s: 数字の文字列（例: "123"）
+        # 2. for ch in s: 文字列sの各文字を変数chに代入して繰り返し
+        # 3. self.digit2id[ch]: 各文字chをキーとして辞書digit2idから対応するIDを
+        #    取得
+        # 4. [...]: 結果をリストとして生成
+        #
+        # 具体例もし s = "123"の場合： ch = "1" → self.digit2id["1"] → 2 ch =
+        # "2" → self.digit2id["2"] → 3 ch = "3" → self.digit2id["3"] → 4となり、
+        # 結果の digit_ids は [2, 3, 4] となります。        
+        # 辞書内包表記との違いは次の通りです。辞書内包表記: {キー: 値 for ...} →
+        # 辞書を生成リスト内包表記: [式 for ...] → リストを生成
+
+        # 入力系列: digits + [SEP] + [MASK]
+        tokens = digit_ids + [self.sep_id] + [self.mask_id]
+        # ここは単純に、数字トークン列の後ろに区切りトークンとマスクトークンを追
+        # 加しています。リスト同士の連結は、+ 演算子で行えます。
+
+        # 長すぎる場合は末尾だけ残す（今回は max_len を十分大きく取る前提）
+        if len(tokens) > self.max_len:
+            tokens = tokens[-self.max_len:]  # 後ろだけ残す
+
+        attention_mask = [1] * len(tokens) # 有効トークンは 1にする
+        # attention_mask は Transformer の自己注意の計算対象に含める位置を示すマ
+        # スクとして使われます。1 の位置だけをソフトマックスに入れて、0 の位置
+        # （ここでは PAD）を無視することで、余分なパディングが注意スコアや出力に
+        # 影響しないようにします。また、多くの実装では損失計算でも同じマスクを
+        # 使って PAD を除外します。変数名が attention_mask なの
+        # は、PyTorch/Transformers などで慣例的にこの名前が使われており、「どの
+        # トークンに attention（自己注意）を向けられるかを示すマスク」という意味
+        # づけから来ています。
+
+        # PAD で右側パディング
+        while len(tokens) < self.max_len:
+            tokens.append(self.pad_id)
+            attention_mask.append(0)
+            # PAD トークンは無効なので attention_mask は 0 にする
+
+        # Tensor に変換して返す
+        input_ids = torch.tensor(tokens, dtype=torch.long)
+        attention_mask = torch.tensor(attention_mask, dtype=torch.long)
+        return input_ids, attention_mask
+
+
+    def batch_encode_without_label(
+        self, numbers: List[int]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        複数の整数をまとめてトークン化し、バッチテンソルを返す。
+
+        Args:
+            numbers (List[int]): 変換する整数のリスト。
+
+        Returns:
+            Tuple[Tensor, Tensor]: 各サンプルの input_ids, attention_mask を先頭
+            軸でまとめたテンソル。
+        """
+        encoded = [self.encode(n) for n in numbers] # 各整数を個別にエンコード。リスト内包表記でまとめる。
+        input_ids = torch.stack([e[0] for e in encoded], dim=0) # 各サンプルの input_ids をバッチ軸で結合
+        attention_mask = torch.stack([e[1] for e in encoded], dim=0) # 各サンプルの attention_mask をバッチ軸で結合
+        return input_ids, attention_mask
+
+
+
 ###############################################################################
 # 位置エンコーディング (Positional Encoding)
 #
@@ -1605,7 +1685,7 @@ def aho_infer(
     # でも model.eval() を呼んでいます。学習時の挙動と区別し、安定した推論を行う
     # ための切り替えです。
     
-    input_ids, attention_mask, label_ids = tokenizer.batch_encode(numbers)
+    input_ids, attention_mask = tokenizer.batch_encode_without_label(numbers)
     # 引数の整数リスト numbers を、トークナイザの batch_encode でまとめてテンソ
     # ル化しています。各数値をトークン列・マスク・ラベルIDに変換し、バッチ次元で
     # スタックした (input_ids, attention_mask, label_ids) を返しています。推論で
@@ -1644,10 +1724,12 @@ def aho_infer(
 
     total = len(numbers)
     correct = 0
+    fail = 0
     for i, n in enumerate(numbers):
         pred_id = preds[i]
         p_aho = probs[i, tokenizer.aho_id].item()
         p_safe = probs[i, tokenizer.safe_id].item()
+        code = "Aho" if is_aho_number(n) else "Safe"
         if pred_id == tokenizer.aho_id:
             tag = "Aho"
         elif pred_id == tokenizer.safe_id:
@@ -1656,12 +1738,14 @@ def aho_infer(
             tag = f"Other({pred_id})"
         if is_aho_number(n) == (pred_id == tokenizer.aho_id):
             correct += 1
+        else:
+            fail += 1
         print(
             f"{n:5d} -> {tag} "
-            f"(p_AHO={p_aho:.3f}, p_SAFE={p_safe:.3f}, rule={is_aho_number(n)})"
+            f"(p_AHO={p_aho:.3f}, p_SAFE={p_safe:.3f}, Code={code}, {'OK' if code==tag else 'NG'})"
         )
     acc = correct / total if total > 0 else 0.0
-    print(f"\n正解率: {acc*100}% ({correct}/{total})")
+    print(f"\n正解率: {acc*100}% ({correct}/{total}, fail:{fail})")
     # 上のforループは、推論結果を1サンプルずつ読み出して表示と正解カウントを行う
     # 処理です。pred_idはモデル予測ラベル、p_aho/p_safe は softmax から取り出し
     # た AHO/SAFE の確率。予測IDに応じて tag を文字列化（AHO/Safe/その他）。ルー
@@ -1793,7 +1877,7 @@ if __name__ == "__main__":
                     continue
 
                 # 1 サンプルだけをバッチ化して推論する
-                input_ids, attention_mask, _ = tokenizer.batch_encode([num])
+                input_ids, attention_mask = tokenizer.batch_encode_without_label([num])
                 input_ids = input_ids.to(device)
                 attention_mask = attention_mask.to(device)
 
