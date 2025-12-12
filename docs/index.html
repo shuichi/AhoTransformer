@@ -181,12 +181,16 @@
 
     <pre id="result">ここに結果が表示されます</pre>
     <br />
-    <a href="https://github.com/shuichi/AhoTransformer/blob/main/decoderonly.py"><img src="./github-mark-white.svg"
-        alt="GitHub" style="width: 32px; height: 32px;" /></a>
+    <a href="https://github.com/shuichi/AhoTransformer/blob/main/decoderonly.py">
+      <img width="32" height="32"
+        src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTgiIGhlaWdodD0iOTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00OC44NTQgMEMyMS44MzkgMCAwIDIyIDAgNDkuMjE3YzAgMjEuNzU2IDEzLjk5MyA0MC4xNzIgMzMuNDA1IDQ2LjY5IDIuNDI3LjQ5IDMuMzE2LTEuMDU5IDMuMzE2LTIuMzYyIDAtMS4xNDEtLjA4LTUuMDUyLS4wOC05LjEyNy0xMy41OSAyLjkzNC0xNi40Mi01Ljg2Ny0xNi40Mi01Ljg2Ny0yLjE4NC01LjcwNC01LjQyLTcuMTctNS40Mi03LjE3LTQuNDQ4LTMuMDE1LjMyNC0zLjAxNS4zMjQtMy4wMTUgNC45MzQuMzI2IDcuNTIzIDUuMDUyIDcuNTIzIDUuMDUyIDQuMzY3IDcuNDk2IDExLjQwNCA1LjM3OCAxNC4yMzUgNC4wNzQuNDA0LTMuMTc4IDEuNjk5LTUuMzc4IDMuMDc0LTYuNi0xMC44MzktMS4xNDEtMjIuMjQzLTUuMzc4LTIyLjI0My0yNC4yODMgMC01LjM3OCAxLjk0LTkuNzc4IDUuMDE0LTEzLjItLjQ4NS0xLjIyMi0yLjE4NC02LjI3NS40ODYtMTMuMDM4IDAgMCA0LjEyNS0xLjMwNCAxMy40MjYgNS4wNTJhNDYuOTcgNDYuOTcgMCAwIDEgMTIuMjE0LTEuNjNjNC4xMjUgMCA4LjMzLjU3MSAxMi4yMTMgMS42MyA5LjMwMi02LjM1NiAxMy40MjctNS4wNTIgMTMuNDI3LTUuMDUyIDIuNjcgNi43NjMuOTcgMTEuODE2LjQ4NSAxMy4wMzggMy4xNTUgMy40MjIgNS4wMTUgNy44MjIgNS4wMTUgMTMuMiAwIDE4LjkwNS0xMS40MDQgMjMuMDYtMjIuMzI0IDI0LjI4MyAxLjc4IDEuNTQ4IDMuMzE2IDQuNDgxIDMuMzE2IDkuMTI2IDAgNi42LS4wOCAxMS44OTctLjA4IDEzLjUyNiAwIDEuMzA0Ljg5IDIuODUzIDMuMzE2IDIuMzY0IDE5LjQxMi02LjUyIDMzLjQwNS0yNC45MzUgMzMuNDA1LTQ2LjY5MUM5Ny43MDcgMjIgNzUuNzg4IDAgNDguODU0IDB6IiBmaWxsPSIjZmZmIi8+PC9zdmc+"
+        alt="GitHub logo">
+    </a>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.webgpu.min.js"></script>
   <script>
+
     // 語彙とトークナイザの定義（Python の DecoderTokenizer と同じ設定）
     const maxLen = 7;
     const padId = 0;
@@ -195,6 +199,7 @@
     const ahoId = 13;
     const safeId = 14;
     const digit2id = {};
+
     for (let d = 0; d < 10; d++) {
       digit2id[String(d)] = d + 1;
     }
@@ -224,12 +229,9 @@
     }
 
     // ここから ONNX Runtime Web 関連の処理
-
     let session = null;
-
     async function initSession() {
       if (session) return session;
-
       try {
         // まず WebGPU での初期化を試みる
         document.getElementById('result').textContent += '\nTrying WebGPU...';
@@ -246,7 +248,6 @@
         });
         document.getElementById('result').textContent += 'Success! ONNX session ready (WASM).\n';
       }
-
       return session;
     }
 
@@ -342,18 +343,14 @@
 
         const inputTensor = new ort.Tensor('int64', inputIdsBig, [1, maxLen]);
         const attnTensor = new ort.Tensor('int64', attnMaskBig, [1, maxLen]);
-
         const sess = await initSession();
-
         const feeds = {
           input_ids: inputTensor,
           attention_mask: attnTensor,
         };
-
         const outputs = await sess.run(feeds);
         const logitsTensor = outputs.logits; // Tensor オブジェクト
         const { tag, pAho, pSafe } = logitsToResult(logitsTensor, attentionMask);
-
         const text =
           `n = ${n}\n` + `推論結果: ${tag}\n` + `p_AHO = ${pAho.toFixed(3)}\n` + `p_SAFE = ${pSafe.toFixed(3)}`;
 

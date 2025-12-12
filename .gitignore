@@ -1,7 +1,7 @@
 uv.lock
+.vscode/
 .DS_Store
 Thumbs.db
-
 checkpoints/
 runs/
 
